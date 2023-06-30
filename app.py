@@ -11,31 +11,18 @@ from bson import json_util
 from flask_cors import cross_origin
 
 
-async def foo():
-    await print("hello")
-
-
-# using
-# setInterval(foo,5)
 timeStamp = time.time()
 mode = 'dev'  #prod ou dev
 app = Flask(__name__)
 db = get_database()
 
-
-
 schemaName = Schema().string().min(1).required()
-
-# try:
-#     print(schemaName.validate("a"))
-# except DontTrustBaseException as e:
-#     print(e.message)
-
-# item_details = collection_name.find()
-# for item in item_details:
-#    print(item)
-
-
+schemaMessage = {
+    "to": Schema().string().min(1).required(),
+    "text": Schema().string().min(1).required(),
+    "type": Schema().string().min(1).required(),
+    "from": Schema().string().min(1).required()
+}
 
 @app.route("/participants", methods=["POST"])
 @cross_origin()
@@ -64,14 +51,48 @@ def create_participant():
     else:
         return jsonify({"error": "Participante já existe"}), 409
 
-
-
 @app.route("/participants", methods=["GET"])
 @cross_origin()
 def get_participants():
     participants = list(db["test"].participants.find())
-    # print(json_util.dumps(participants))
     return jsonify(json_util.dumps(participants))
+
+
+@app.route("/messages", methods=["POST"])
+@cross_origin()
+def create_message():
+    data = request.json
+    to, text, type = data["to"], data["text"], data["type"]
+    from_header = request.headers.get("user")
+    
+    participant = db["test"]['participants'].find_one({"name": from_header})
+    if not participant:
+        return jsonify({"error": "Participante inválido"}), 422
+
+    try:
+        schemaMessage["to"].validate(to)
+        schemaMessage["text"].validate(text)
+        schemaMessage["type"].validate(type)
+        schemaMessage["from"].validate(from_header)
+    except DontTrustBaseException as e:
+        return jsonify({"error": str(e.message)}), 422
+
+    message = {
+        "from": from_header,
+        "to": data["to"],
+        "text": data["text"],
+        "type": data["type"],
+        "time": datetime.now().strftime("%H:%M:%S")
+    }
+    print(message)
+
+    try:
+        db["test"]["messages"].insert_one(message)
+        print("Mensagem:", message)
+        return jsonify(json_util.dumps(message)), 201
+    except Exception as e:
+        print(str(e))
+        return jsonify({"error": "Ocorreu um erro no banco de dados"}), 409
 
 
 if __name__ == '__main__':
