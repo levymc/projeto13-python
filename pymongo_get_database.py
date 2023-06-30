@@ -10,8 +10,4 @@ def get_database():
     return client
 
 if __name__ == "__main__":
-    db = get_database()  # Obter a conexão com o banco de dados
-    collection_name = db["messages"]  # Acessar a coleção "messages"
-
-    # Obter todos os documentos da coleção "messages"
-    documents = collection_name.find()
+    db = get_database()
