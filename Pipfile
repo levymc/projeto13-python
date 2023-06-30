@@ -8,6 +8,10 @@ flask = "*"
 waitress = "*"
 pymongo = {version = "*", extras = ["srv"]}
 donttrust = "*"
+sqlalchemy = "*"
+isodate = "*"
+"flask.json" = "*"
+flask-cors = "*"
 
 [dev-packages]
 

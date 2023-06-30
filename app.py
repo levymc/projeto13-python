@@ -7,16 +7,18 @@ from donttrust.exceptions import DontTrustBaseException
 from waitress import serve
 import time  
 from setInterval import setInterval
+from bson import json_util
+from flask_cors import cross_origin
 
 
-def foo():
-    print("hello")
+async def foo():
+    await print("hello")
 
 
 # using
-setInterval(foo,1)
+# setInterval(foo,5)
 timeStamp = time.time()
-mode = "dev" #prod ou dev
+mode = 'dev'  #prod ou dev
 app = Flask(__name__)
 db = get_database()
 
@@ -36,8 +38,10 @@ schemaName = Schema().string().min(1).required()
 
 
 @app.route("/participants", methods=["POST"])
+@cross_origin()
 def create_participant():
     name = request.json.get("name")
+    print(name)
     try: 
         schemaName.validate(name)
     except DontTrustBaseException as e:
@@ -61,9 +65,18 @@ def create_participant():
         return jsonify({"error": "Participante já existe"}), 409
 
 
-# if __name__ == '__main__':
-#     if mode == 'dev':
-#         print(f'Servidor iniciando em: http://localhost:{5005}')
-#         app.run(debug=True, host='0.0.0.0', port=5005)
-#     else:
-#         serve(app, host='0.0.0.0', port=5005, threads=5, url_scheme='https')
+
+@app.route("/participants", methods=["GET"])
+@cross_origin()
+def get_participants():
+    participants = list(db["test"].participants.find())
+    # print(json_util.dumps(participants))
+    return jsonify(json_util.dumps(participants))
+
+
+if __name__ == '__main__':
+    if mode == 'dev':
+        print(f'Servidor iniciando em: http://localhost:{5005}')
+        app.run(debug=True, host='0.0.0.0', port=5000)
+    else:
+        serve(app, host='0.0.0.0', port=5005, threads=5, url_scheme='https')
